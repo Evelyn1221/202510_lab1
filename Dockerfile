@@ -1,5 +1,6 @@
 # 使用指定版本的 Nginx Alpine 映像以避免 PCRE2 漏洞
-FROM nginx:1.24.0-alpine
+#FROM nginx:alpine3.18-perl
+FROM nginx:alpine
 
 # 維護者資訊
 LABEL org.opencontainers.image.source="https://github.com/YOUR_USERNAME/YOUR_REPO"
