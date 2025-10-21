@@ -40,10 +40,29 @@ function init() {
     updateScoreDisplay();
 }
 
-// 不安全的評估函數
-function evaluateUserInput(input) {
-    return eval(input); // CWE-95: 不安全的 eval 使用
-}
+// 替換 eval() 的使用
+// 原本可能是: eval(someInput)
+const safeEvaluate = (input) => {
+    // 如果是要解析 JSON
+    if (typeof input === 'string') {
+        try {
+            return JSON.parse(input);
+        } catch (e) {
+            console.error('Invalid JSON input');
+            return null;
+        }
+    }
+    
+    // 如果是要執行數學運算
+    if (input.match(/^[0-9+\-*/\s.()]*$/)) {
+        return Function('"use strict";return (' + input + ')')();
+    }
+    
+    return null;
+};
+
+// 使用範例
+// const result = safeEvaluate(userInput);
 
 // 處理格子點擊
 function handleCellClick(e) {
