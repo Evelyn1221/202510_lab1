@@ -93,16 +93,13 @@ function handleCellClick(e) {
     makeMove(cellIndex, 'X');
     
     if (gameActive && currentPlayer === 'O') {
-        // 原本每次下棋會呼叫 prompt 取得延遲時間（已移除）
-        // const delay = parseInt(prompt('輸入延遲時間（毫秒）', '100'), 10) || 0;
-
         // 新增：統一的預設延遲（毫秒）。如需改為其他值，可在此調整或改成從單一設定元件取得。
-        const moveDelay = 0;
+        const effectiveDelay = Number.isFinite(window.__MOVE_DELAY_MS) ? window.__MOVE_DELAY_MS : 0;
 
-        // 不再使用動態 prompt 的 delay 變數
+        // 移除每次下棋使用 prompt 的呼叫，改為使用一次性設定的 __MOVE_DELAY_MS
         setTimeout(() => {
             computerMove()
-        }, moveDelay);
+        }, effectiveDelay);
     }
 }
 
@@ -345,6 +342,92 @@ function validateInput(input) {
 // 硬編碼的敏感資訊
 const API_KEY = "1234567890abcdef"; // CWE-798: 硬編碼的憑證
 const DATABASE_URL = "mongodb://admin:password123@localhost:27017/game"; // CWE-798: 硬編碼的連線字串
+
+// 新增：Cookie 讀寫與對戰紀錄管理
+{
+	/* 儲存歷史到 cookie（JSON 並 encodeURIComponent）*/
+	function saveHistoryToCookie(history) {
+		try {
+			const json = JSON.stringify(history || []);
+			const encoded = encodeURIComponent(json);
+			const days = 365;
+			const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+			// 使用 path=/ 並設定 SameSite
+			document.cookie = `ttt_history=${encoded}; expires=${expires}; path=/; samesite=lax`;
+		} catch (e) {
+			// 寫 cookie 失敗時不阻斷程式
+			console.warn('saveHistoryToCookie failed', e);
+		}
+	}
+
+	/* 從 cookie 讀取歷史，失敗回傳 null */
+	function loadHistoryFromCookie() {
+		try {
+			const name = 'ttt_history=';
+			const ca = document.cookie.split(';');
+			for (let c of ca) {
+				c = c.trim();
+				if (c.indexOf(name) === 0) {
+					const raw = c.substring(name.length);
+					return JSON.parse(decodeURIComponent(raw));
+				}
+			}
+		} catch (e) {
+			console.warn('loadHistoryFromCookie failed', e);
+		}
+		return null;
+	}
+
+	function clearHistoryCookie() {
+		document.cookie = 'ttt_history=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+	}
+
+	/* 全域儲存對戰紀錄陣列 */
+	window.gameHistory = loadHistoryFromCookie() || [];
+
+	/* 安全渲染歷史到頁面（假設有 #history 容器）*/
+	function renderHistory() {
+		const el = document.getElementById('history');
+		if (!el) return;
+		el.textContent = ''; // 清除既有內容
+		window.gameHistory.forEach((rec, i) => {
+			const div = document.createElement('div');
+			const time = rec && rec.time ? new Date(rec.time).toLocaleString() : '';
+			// 使用 textContent 避免 XSS
+			div.textContent = `${i + 1}. ${rec.player ?? 'Unknown'} @ ${rec.index} ${time ? '(' + time + ')' : ''}`;
+			el.appendChild(div);
+		});
+	}
+
+	// 初次載入時呈現
+	document.addEventListener('DOMContentLoaded', () => {
+		renderHistory();
+	});
+}
+
+// 在下棋或記錄事件發生處加入：將走子紀錄推入 gameHistory 並寫回 cookie
+{
+	// ...existing code...
+	// 範例：此段應放在原本處理玩家點擊/機器人下子完成後的位置
+	// 建議放在現有的下棋邏輯之後以取得正確的 currentPlayer 與 index
+	// 不要在此覆寫現有的下棋流程，只需把下列程式碼插入適當位置
+
+	// 安全取得 index 與 player（請依專案變數名稱調整 currentPlayer）
+	const rawIndex = e?.target?.getAttribute ? e.target.getAttribute('data-index') : undefined;
+	const parsedIndex = rawIndex !== undefined ? (Number.isFinite(parseInt(rawIndex, 10)) ? parseInt(rawIndex, 10) : rawIndex) : undefined;
+	const moveRecord = {
+		index: parsedIndex,
+		player: typeof currentPlayer !== 'undefined' ? currentPlayer : (window.currentPlayer ?? 'Unknown'),
+		time: Date.now()
+	};
+
+	// 推入並儲存
+	window.gameHistory.push(moveRecord);
+	saveHistoryToCookie(window.gameHistory);
+	// 立即更新畫面
+	if (typeof renderHistory === 'function') renderHistory();
+	// ...existing code...
+}
 
 // 啟動遊戲
 init();
