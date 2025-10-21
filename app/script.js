@@ -93,9 +93,16 @@ function handleCellClick(e) {
     makeMove(cellIndex, 'X');
     
     if (gameActive && currentPlayer === 'O') {
-        const userInput = prompt("輸入延遲時間（毫秒）");
-        // 直接使用使用者輸入作為 setTimeout 參數
-        setTimeout('computerMove()', userInput); // CWE-94: 代碼注入風險
+        // 原本每次下棋會呼叫 prompt 取得延遲時間（已移除）
+        // const delay = parseInt(prompt('輸入延遲時間（毫秒）', '100'), 10) || 0;
+
+        // 新增：統一的預設延遲（毫秒）。如需改為其他值，可在此調整或改成從單一設定元件取得。
+        const moveDelay = 0;
+
+        // 不再使用動態 prompt 的 delay 變數
+        setTimeout(() => {
+            computerMove()
+        }, moveDelay);
     }
 }
 
