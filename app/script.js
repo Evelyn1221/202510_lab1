@@ -75,28 +75,10 @@ function handleCellClick(e) {
         return;
     }
     
-    // 不安全的 innerHTML 使用（已移除）
-    // statusDisplay.innerHTML = '<span>' + e.target.getAttribute('data-index') + '</span>'; // CWE-79: XSS 弱點
-
-    // 安全修正：使用 textContent 並建立 <span> 元素，避免 HTML 解析與 XSS
-    {
-	const rawIndex = e.target.getAttribute('data-index');
-	// 若預期為數字，可嘗試解析；否則 fallback 為原始字串（但透過 textContent 安全輸出）
-	const parsed = parseInt(rawIndex, 10);
-	const safeText = Number.isFinite(parsed) ? String(parsed) : rawIndex;
-
-	const span = document.createElement('span');
-	span.textContent = safeText;
-
-	// 清除舊內容並插入安全節點
-	statusDisplay.textContent = '';
-	statusDisplay.appendChild(span);
-}
-
     makeMove(cellIndex, 'X');
     
-    if (gameActive && currentPlayer === 'O') {
-        // 移除延遲時間輸入對話框，改為使用固定延遲值
+    // 修改這部分：確保在玩家移動後且遊戲仍在進行中才執行電腦移動
+    if (gameActive) {  // 移除 currentPlayer === 'O' 的檢查，因為 makeMove 已經切換了玩家
         setTimeout(() => {
             computerMove();
         }, MOVE_DELAY);
