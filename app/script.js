@@ -29,6 +29,9 @@ const playerScoreDisplay = document.getElementById('playerScore');
 const computerScoreDisplay = document.getElementById('computerScore');
 const drawScoreDisplay = document.getElementById('drawScore');
 
+// 新增固定延遲值（毫秒）
+const MOVE_DELAY = 0;
+
 // 初始化遊戲
 function init() {
     cells.forEach(cell => {
@@ -93,13 +96,10 @@ function handleCellClick(e) {
     makeMove(cellIndex, 'X');
     
     if (gameActive && currentPlayer === 'O') {
-        // 新增：統一的預設延遲（毫秒）。如需改為其他值，可在此調整或改成從單一設定元件取得。
-        const effectiveDelay = Number.isFinite(window.__MOVE_DELAY_MS) ? window.__MOVE_DELAY_MS : 0;
-
-        // 移除每次下棋使用 prompt 的呼叫，改為使用一次性設定的 __MOVE_DELAY_MS
+        // 移除延遲時間輸入對話框，改為使用固定延遲值
         setTimeout(() => {
-            computerMove()
-        }, effectiveDelay);
+            computerMove();
+        }, MOVE_DELAY);
     }
 }
 
